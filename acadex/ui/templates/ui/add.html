@@ -1,0 +1,42 @@
+{% extends "lbrc_flask/page.html" %}
+{% from "lbrc_flask/form_macros.html" import render_search, render_pagination %}
+
+{% block content %}
+<section>
+    <div class="page-header">
+        <h1>Add Academic</h1>
+
+        {{ render_search(
+            search_form,
+            'ui.add_search',
+            placeholder='enter search text',
+            buttons=[
+                {
+                    'text': 'Back',
+                    'endpoint': 'ui.index',
+                },
+            ],
+        ) }}
+
+    </div>
+
+    <ul class="list-group">
+        {% for a in academics %}
+            <li class="list-group-item">
+                <div class='row'>
+                    <div class='col-1'>
+                        <a href="{{url_for('ui.add', google_scholar_id=a.scholar_id)}}"><i class="fas fa-plus-square"></i></a>
+                    </div>
+                    <div class='col'>
+                        <header>
+                            <h1>{{a.name}}</h1>
+                            <h2>{{a.affiliation}}</h2>
+                        </header>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+</section>
+
+{% endblock %}
