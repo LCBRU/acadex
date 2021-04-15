@@ -1,6 +1,7 @@
 from flask import Flask
 from .ui import blueprint as ui_blueprint
 from .config import Config
+from .admin import init_admin
 from lbrc_flask import init_lbrc_flask, ReverseProxied
 from lbrc_flask.security import init_security, Role, User
 
@@ -16,6 +17,7 @@ def create_app(config=Config):
         init_lbrc_flask(app, TITLE)
 
         init_security(app, user_class=User, role_class=Role)
+        init_admin(app, TITLE)
 
     app.register_blueprint(ui_blueprint)
 
