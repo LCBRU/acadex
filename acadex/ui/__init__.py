@@ -11,7 +11,7 @@ blueprint = Blueprint("ui", __name__, template_folder="templates")
 
 # Login required for all views
 @blueprint.before_request
-@login_required
+# @login_required
 def before_request():
     pass
 
