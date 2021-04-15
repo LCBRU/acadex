@@ -4,6 +4,7 @@ from lbrc_flask.database import db
 from lbrc_flask.forms import SearchForm
 from acadex.model import Academic
 from scholarly import scholarly
+from itertools import islice
 
 
 blueprint = Blueprint("ui", __name__, template_folder="templates")
@@ -49,13 +50,13 @@ def add_search():
     academics = []
 
     if search_form.search.data:
-        for a in scholarly.search_author(search_form.search.data):
+        for a in islice(scholarly.search_author(search_form.search.data), 0, 10):
             academics.append(a)
 
     return render_template("ui/add.html", academics=academics, search_form=search_form)
 
 
-@blueprint.route("/add/<string:google_scholar_id>/")
+@blueprint.route("/add/<string:google_scholar_id>/", methods=['POST'])
 def add(google_scholar_id):
     resp = scholarly.fill(scholarly.search_author_id(google_scholar_id), sections=['indices'])
 
