@@ -32,7 +32,7 @@
             <li class="list-group-item">
                 <div class='row'>
                     <div class='col-1'>
-                        <form action="{{url_for('ui.add', google_scholar_id=a.scholar_id)}}", method="POST">
+                        <form action="{{url_for('ui.add_or_update', google_scholar_id=a.scholar_id)}}", method="POST">
                             <button type="submit" class="btn btn-primary"><i class="fas fa-plus-square"></i> Add</button>
                         </form>
                     </div>

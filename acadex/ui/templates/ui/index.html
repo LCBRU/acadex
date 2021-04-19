@@ -15,6 +15,23 @@
                     'text': 'Add',
                     'endpoint': 'ui.add_search',
                 },
+                {
+                    'text': 'Update All',
+                    'endpoint': 'ui.update_all',
+                    'class': 'lock_screen',
+                },
+                {
+                    'text': 'CSV',
+                    'endpoint': 'ui.download_csv',
+                },
+                {
+                    'text': 'Excel',
+                    'endpoint': 'ui.download_excel',
+                },
+                {
+                    'text': 'Print',
+                    'endpoint': 'ui.download_pdf',
+                },
             ],
         ) }}
 
@@ -25,10 +42,13 @@
             <li class="list-group-item">
                 <div class='summary_details row'>
                     <div class="col">
-                        <header>
-                            <h1>{{a.name}}</h1>
-                            <h2>{{a.affiliation}}</h2>
-                        </header>
+                        <div class="d-flex w-100 justify-content-between">
+                            <header>
+                                <h1>{{a.name}}</h1>
+                                <h2>{{a.affiliation}}</h2>
+                            </header>
+                            <small><a class="lock_screen" href="{{ url_for('ui.add_or_update', google_scholar_id=a.google_scholar_id) }}">last updated {{ a.last_update_date | datetime_humanize }}</a></small>
+                        </div>
                         <table class="table table-sm">
                             <tr>
                                 <th>Citations</th>

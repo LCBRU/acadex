@@ -4,3 +4,6 @@ sqlalchemy-migrate
 flask-api
 pymysql
 scholarly
+openpyxl
+weasyprint
+Flask-WeasyPrint

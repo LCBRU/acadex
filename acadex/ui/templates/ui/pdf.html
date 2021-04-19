@@ -1,0 +1,108 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+	<title>Acedex: Academics</title>
+
+	<style>
+
+		@page {
+			size: A4 portrait;
+
+			@bottom-right {
+				content: "Page " counter(page) " of " counter(pages);
+				font-size: 10px;
+			}                 
+
+			@bottom-left {
+				content: "Downloaded: {{ current_date }}";
+				font-size: 10px;
+			}
+		}
+
+		body {
+			font-family: Helvetica, Arial, sans-serif;
+			font-size: 10px;
+		}
+
+		h1 {
+			margin: 0;
+			text-align: center;
+			color: #193e72;
+		}
+
+		table {
+			width: 100%;
+		}
+
+		table td, table th {
+			padding: 5px 10px;
+		}
+
+		table {
+			border: 1px solid #000;
+			border-collapse:collapse;
+		}
+
+		table tr th.number {
+			text-align: right;
+		}
+
+		table tr {
+			border: 1px solid #000;
+		}
+    
+		table tr p {
+			margin: 0;
+			border: 0;
+			padding: 0;
+		}
+
+		table tr p.name {
+			font-size: 14px;
+		}
+    
+		table tr p.affiliation {
+			font-size: 12px;
+			color: #777;
+		}
+    
+		table tr td.number {
+			text-align: right;
+			font-size: 14px;
+		}
+	</style>
+</head>
+
+<body>
+
+	<h1>Acadex: Academics</h1>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th class="number">Citation</th>
+				<th class="number">H-Index</th>
+				<th class="number">I10-Index</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for a in academics %}
+				<tr>
+					<td>
+						<p class="name">{{ a.name }}</p>
+						<p class="affiliation">{{ a.affiliation }}</p>
+					</td>
+					<td class="number">{{ a.cited_by | separated_number }}</td>
+					<td class="number">{{ a.h_index | separated_number }}</td>
+					<td class="number">{{ a.i10_index | separated_number }}</td>
+				</tr>
+            {% endfor %}
+		</tbody>
+	</table>
+
+</body>
+</html>

@@ -1,10 +1,17 @@
-from flask import Blueprint, request, render_template, redirect, url_for
+import csv
+import io
+from flask import Blueprint, request, render_template, redirect, url_for, make_response, send_file
 from flask_security import login_required
 from lbrc_flask.database import db
 from lbrc_flask.forms import SearchForm
+from openpyxl.styles import Font
 from acadex.model import Academic
 from scholarly import scholarly
 from itertools import islice
+from datetime import datetime
+from openpyxl import Workbook
+from tempfile import NamedTemporaryFile
+from flask_weasyprint import HTML, render_pdf
 
 
 blueprint = Blueprint("ui", __name__, template_folder="templates")
@@ -56,21 +63,131 @@ def add_search():
     return render_template("ui/add.html", academics=academics, search_form=search_form)
 
 
-@blueprint.route("/add/<string:google_scholar_id>/", methods=['POST'])
-def add(google_scholar_id):
+@blueprint.route("/add_or_update/<string:google_scholar_id>/", methods=['GET', 'POST'])
+def add_or_update(google_scholar_id):
+    _add_or_update_academic(google_scholar_id)
+
+    db.session.commit()
+
+    return redirect(url_for('ui.index'))
+
+
+@blueprint.route("/update_all/")
+def update_all():
+    for a in Academic.query.all():
+        _add_or_update_academic(a.google_scholar_id)
+
+    db.session.commit()
+
+    return redirect(url_for('ui.index'))
+
+
+def _add_or_update_academic(google_scholar_id):
     resp = scholarly.fill(scholarly.search_author_id(google_scholar_id), sections=['indices'])
 
     if resp:
-        db.session.add(
-            Academic(
-                google_scholar_id=google_scholar_id,
-                name=resp['name'],
-                affiliation=resp['affiliation'],
-                cited_by=resp['citedby'],
-                h_index=resp['hindex'],
-                i10_index=resp['i10index'],
-        ))
+        a = Academic.query.filter(Academic.google_scholar_id == google_scholar_id).one_or_none()
 
-        db.session.commit()
+        if a is None:
+            a = Academic(google_scholar_id=google_scholar_id)
+        
+        a.name=resp['name']
+        a.affiliation=resp['affiliation']
+        a.cited_by=resp['citedby']
+        a.h_index=resp['hindex']
+        a.i10_index=resp['i10index']
+        a.last_update_date=datetime.utcnow()
 
-    return redirect(url_for('ui.index'))
+        db.session.add(a)
+
+
+@blueprint.route('/download/csv')
+def download_csv():
+
+    COL_NAME = 'Name'
+    COL_AFFILIATION = 'Affiliation'
+    COL_CITATIONS = 'Citations'
+    COL_H_INDEX = 'H-Index'
+    COL_I10_INDEX = 'I10-Index'
+
+    fieldnames = [
+        COL_NAME,
+        COL_AFFILIATION,
+        COL_CITATIONS,
+        COL_H_INDEX,
+        COL_I10_INDEX,
+    ]
+
+    si = io.StringIO()
+
+    output = csv.DictWriter(
+        si,
+        fieldnames=fieldnames,
+        quoting=csv.QUOTE_NONNUMERIC
+    )
+
+    output.writeheader()
+    
+    for a in Academic.query.order_by(Academic.name).all():
+        output.writerow({
+            COL_NAME: a.name,
+            COL_AFFILIATION: a.affiliation,
+            COL_CITATIONS: a.cited_by,
+            COL_H_INDEX: a.h_index,
+            COL_I10_INDEX: a.i10_index,
+    })
+
+    resp = make_response(si.getvalue().encode('utf-8'))
+    resp.headers["Content-Disposition"] = "attachment; filename=acadex_{}.csv".format(datetime.utcnow().strftime("%c"))
+    resp.headers["Content-type"] = "text/csv; charset=utf-8"
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = 0
+    return resp
+
+
+@blueprint.route('/download/excel')
+def download_excel():
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Academics"
+    bold = Font(bold=True)
+
+    ws['A1'].style = 'Headline 1'
+    ws['B1'].style = 'Headline 1'
+    ws['C1'].style = 'Headline 1'
+    ws['D1'].style = 'Headline 1'
+    ws['E1'].style = 'Headline 1'
+
+    ws.cell(column=1, row=1, value='Name')
+    ws.cell(column=2, row=1, value='Affiliation')
+    ws.cell(column=3, row=1, value='Citations')
+    ws.cell(column=4, row=1, value='H-Index')
+    ws.cell(column=5, row=1, value='I10-index')
+
+    for row, a in enumerate(Academic.query.order_by(Academic.name).all(), start=2):
+        ws['A{}'.format(row)].font = bold
+        ws.cell(column=1, row=row, value=a.name)
+        ws.cell(column=2, row=row, value=a.affiliation)
+        ws.cell(column=3, row=row, value=a.cited_by)
+        ws.cell(column=4, row=row, value=a.h_index)
+        ws.cell(column=5, row=row, value=a.i10_index)
+
+    with NamedTemporaryFile() as tmp:
+        wb.save(tmp.name)
+        tmp.flush()
+        return send_file(
+            tmp.name,
+            as_attachment=True,
+            attachment_filename='acadex_{}.xlsx'.format(datetime.utcnow().strftime("%Y%m%d_%H%M%S")),
+            cache_timeout=0,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+
+
+@blueprint.route('/download/pdf')
+def download_pdf():
+    academics = Academic.query.order_by(Academic.name).all()
+
+    html = render_template('ui/pdf.html', academics=academics)
+    return render_pdf(HTML(string=html), download_filename='acadex_{}.pdf'.format(datetime.utcnow().strftime("%Y%m%d_%H%M%S")))
