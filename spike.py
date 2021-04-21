@@ -1,10 +1,16 @@
 #/usr/bin/python
 import json, sys
 from scholarly import scholarly
+from pprint import pprint as pp
 
-search_query = scholarly.search_author('samani')
-author = scholarly.fill(next(search_query), sections=['indices', 'counts'])
-print(author)
+search_query = scholarly.search_author('adlam, leicester')
+author = scholarly.fill(next(search_query), sections=['indices', 'counts', 'publications'])
+p = author['publications'][0]
+pp(p)
+p = scholarly.fill(p)
+pp(p)
+
+# print(scholarly.bibtex(p))
 # author = scholarly.search_author_id('the id')
 # author = author.fill(sections=['indices'])
 

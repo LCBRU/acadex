@@ -1,4 +1,4 @@
-{% extends "lbrc_flask/page.html" %}
+{% extends "ui/page.html" %}
 {% from "lbrc_flask/form_macros.html" import render_search, render_pagination %}
 
 {% block content %}
@@ -14,11 +14,6 @@
                 {
                     'text': 'Add',
                     'endpoint': 'ui.add_search',
-                },
-                {
-                    'text': 'Update All',
-                    'endpoint': 'ui.update_all',
-                    'class': 'lock_screen',
                 },
                 {
                     'text': 'CSV',
@@ -54,11 +49,13 @@
                                 <th>Citations</th>
                                 <th>h-index</th>
                                 <th>i10-index</th>
+                                <th>Publications</th>
                             </tr>
                             <tr>
                                 <td>{{a.cited_by}}</td>
                                 <td>{{a.h_index}}</td>
                                 <td>{{a.i10_index}}</td>
+                                <td><a class="lock_screen" href="">{{a.articles | count}}</a></td>
                             </tr>
                         </table>
                     </div>

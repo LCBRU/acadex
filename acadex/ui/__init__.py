@@ -5,13 +5,14 @@ from flask_security import login_required
 from lbrc_flask.database import db
 from lbrc_flask.forms import SearchForm
 from openpyxl.styles import Font
-from acadex.model import Academic
+from acadex.model import Academic, Article
 from scholarly import scholarly
 from itertools import islice
-from datetime import datetime
+from datetime import datetime, date
 from openpyxl import Workbook
 from tempfile import NamedTemporaryFile
 from flask_weasyprint import HTML, render_pdf
+from Bio import Entrez
 
 
 blueprint = Blueprint("ui", __name__, template_folder="templates")
@@ -50,6 +51,26 @@ def index():
     return render_template("ui/index.html", academics=academics, search_form=search_form)
 
 
+@blueprint.route("/publications")
+def publications():
+    search_form = SearchForm(formdata=request.args)
+
+    q = Article.query
+
+    if search_form.search.data:
+        q = q.filter(Article.title.like("%{}%".format(search_form.search.data)))
+
+    q = q.order_by(Article.published_date.desc())
+
+    articles = q.paginate(
+            page=search_form.page.data,
+            per_page=5,
+            error_out=False,
+        )
+
+    return render_template("ui/articles.html", articles=articles, search_form=search_form)
+
+
 @blueprint.route("/add_search")
 def add_search():
     search_form = SearchForm(formdata=request.args)
@@ -66,16 +87,6 @@ def add_search():
 @blueprint.route("/add_or_update/<string:google_scholar_id>/", methods=['GET', 'POST'])
 def add_or_update(google_scholar_id):
     _add_or_update_academic(google_scholar_id)
-
-    db.session.commit()
-
-    return redirect(url_for('ui.index'))
-
-
-@blueprint.route("/update_all/")
-def update_all():
-    for a in Academic.query.all():
-        _add_or_update_academic(a.google_scholar_id)
 
     db.session.commit()
 
@@ -99,6 +110,64 @@ def _add_or_update_academic(google_scholar_id):
         a.last_update_date=datetime.utcnow()
 
         db.session.add(a)
+
+        _update_articles(a)
+
+
+def _update_articles(academic):
+    retstart = 0
+    count = 1
+    batch_size = 100
+
+    while retstart < count:
+        handle = Entrez.esearch(db="pubmed", retstart=retstart, retmax=batch_size, term=f"({academic.pubmed_name}[Author])")
+        pubmed_records = Entrez.read(handle)
+        handle.close()
+
+        count = int(pubmed_records['Count'])
+        retstart += batch_size
+
+        handle = Entrez.efetch(db="pubmed", id=pubmed_records['IdList'], retmode='xml')
+
+        pubmed_records = Entrez.read(handle)
+        for pubmed_record in pubmed_records['PubmedArticle']:
+            pm_id = int(pubmed_record['MedlineCitation']['PMID'])
+
+            article = Article.query.filter(Article.pm_id == pm_id).one_or_none()
+
+            if article is None:
+                article = Article(pm_id=pm_id)
+
+            _update_article(pubmed_record, article)
+
+            article.authors.add(academic)
+
+            db.session.add(article)
+
+        handle.close()
+
+
+def _update_article(pubmed_record, article):
+    art = pubmed_record['MedlineCitation']['Article']
+    article.journal = art['Journal']['Title']
+    if len(art['ArticleDate']) > 0:
+        artdate = art['ArticleDate'][0]
+        article.published_date = date(
+                    int(artdate['Year']),
+                    int(artdate['Month']),
+                    int(artdate['Day']),
+                )
+    article.title = art['ArticleTitle']
+    abstracts = ''
+    if 'Abstract' in art:
+        for at in [v for k, v in art['Abstract'].items() if k == 'AbstractText']:
+            for s in at:
+                if "Label" in s.attributes:
+                    abstracts += f'{s.attributes["Label"]}: {s}\n'
+                else:
+                    abstracts += f'{s}\n'
+                if s.attributes.get("Label", "") == 'FUNDING':
+                    article.abstract_funding = s
 
 
 @blueprint.route('/download/csv')
