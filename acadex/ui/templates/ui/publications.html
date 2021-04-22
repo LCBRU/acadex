@@ -1,0 +1,60 @@
+{% extends "ui/page.html" %}
+{% from "lbrc_flask/form_macros.html" import render_search, render_pagination %}
+
+{% block content %}
+<section>
+    <div class="page-header">
+        <h1>Publications</h1>
+
+        {{ render_search(
+            search_form,
+            'ui.publications',
+            placeholder='enter search text - searches title',
+            buttons=[],
+        ) }}
+
+    </div>
+
+    <ul class="list-group">
+        {% for p in publications.items %}
+            <li class="list-group-item">
+                <div class='summary_details row'>
+                    <div class="col">
+                        <header>
+                            <h1><a href="https://pubmed.ncbi.nlm.nih.gov/{{p.pm_id}}/" target="_blank">{{p.title | title}}</a></h1>
+                            <h2>{{p.journal | title}}</h2>
+                        </header>
+
+                        {% if p.authors | count > 0 %}
+                            <h3>Authors</h3>
+                            <p>
+                                {% for a in p.authors %}
+                                    <span class="btn btn-sm btn-light m-1" title="{{a.affiliation}}">{{a.full_name}}</span>
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+
+                        {% if p.abstracts | count == 0 %}
+                            <p><i>No Abstract</i></p>
+                        {% endif %}
+
+                        {% for a in p.abstracts %}
+                            {% if a.label %}
+                                <h3>{{a.label | title}}</h3>
+                            {% endif %}
+                            <p>{{a.text | safe}}</p>
+                        {% endfor %}
+
+                        <div class="d-flex justify-content-end">
+                            <small>published&nbsp{{p.published_date | date_format | nbsp}}</small>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+</section>
+
+{{ render_pagination(publications, 'ui.publications', form=search_form) }}
+
+{% endblock %}

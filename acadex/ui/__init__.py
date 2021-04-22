@@ -5,7 +5,7 @@ from flask_security import login_required
 from lbrc_flask.database import db
 from lbrc_flask.forms import SearchForm
 from openpyxl.styles import Font
-from acadex.model import Academic, Article
+from acadex.model import Academic, Publication, AbstractSection, Author
 from scholarly import scholarly
 from itertools import islice
 from datetime import datetime, date
@@ -55,20 +55,20 @@ def index():
 def publications():
     search_form = SearchForm(formdata=request.args)
 
-    q = Article.query
+    q = Publication.query
 
     if search_form.search.data:
-        q = q.filter(Article.title.like("%{}%".format(search_form.search.data)))
+        q = q.filter(Publication.title.like("%{}%".format(search_form.search.data)))
 
-    q = q.order_by(Article.published_date.desc())
+    q = q.order_by(Publication.published_date.desc())
 
-    articles = q.paginate(
+    publications = q.paginate(
             page=search_form.page.data,
             per_page=5,
             error_out=False,
         )
 
-    return render_template("ui/articles.html", articles=articles, search_form=search_form)
+    return render_template("ui/publications.html", publications=publications, search_form=search_form)
 
 
 @blueprint.route("/add_search")
@@ -111,10 +111,10 @@ def _add_or_update_academic(google_scholar_id):
 
         db.session.add(a)
 
-        _update_articles(a)
+        _update_publications(a)
 
 
-def _update_articles(academic):
+def _update_publications(academic):
     retstart = 0
     count = 1
     batch_size = 100
@@ -133,42 +133,58 @@ def _update_articles(academic):
         for pubmed_record in pubmed_records['PubmedArticle']:
             pm_id = int(pubmed_record['MedlineCitation']['PMID'])
 
-            article = Article.query.filter(Article.pm_id == pm_id).one_or_none()
+            publication = Publication.query.filter(Publication.pm_id == pm_id).one_or_none()
 
-            if article is None:
-                article = Article(pm_id=pm_id)
+            if publication is None:
+                publication = Publication(pm_id=pm_id)
 
-            _update_article(pubmed_record, article)
+            _update_publication(pubmed_record, publication)
 
-            article.authors.add(academic)
+            publication.academics.add(academic)
 
-            db.session.add(article)
+            db.session.add(publication)
 
         handle.close()
 
 
-def _update_article(pubmed_record, article):
+def _update_publication(pubmed_record, publication):
     art = pubmed_record['MedlineCitation']['Article']
-    article.journal = art['Journal']['Title']
+    publication.journal = art['Journal']['Title']
+
+
+    art['Journal']['Title']
+
     if len(art['ArticleDate']) > 0:
         artdate = art['ArticleDate'][0]
-        article.published_date = date(
+        publication.published_date = date(
                     int(artdate['Year']),
                     int(artdate['Month']),
                     int(artdate['Day']),
                 )
-    article.title = art['ArticleTitle']
-    abstracts = ''
+
+    publication.title = art['ArticleTitle']
+
+    if publication.id:
+        AbstractSection.query.filter(AbstractSection.publication_id == publication.id).delete()
+        Author.query.filter(Author.publication_id == publication.id).delete()
+
     if 'Abstract' in art:
         for at in [v for k, v in art['Abstract'].items() if k == 'AbstractText']:
             for s in at:
-                if "Label" in s.attributes:
-                    abstracts += f'{s.attributes["Label"]}: {s}\n'
-                else:
-                    abstracts += f'{s}\n'
-                if s.attributes.get("Label", "") == 'FUNDING':
-                    article.abstract_funding = s
+                db.session.add(AbstractSection(
+                    publication=publication,
+                    label=s.attributes.get("Label", None),
+                    text=s,
+                ))
 
+    for au in art['AuthorList']:
+        db.session.add(Author(
+            publication=publication,
+            last_name=au.get("LastName", None),
+            fore_name=au.get("ForeName", None),
+            initials=au.get("Initials", None),
+            affiliation=' '.join([aff.get('Affiliation', None) for aff in au.get("AffiliationInfo", [])]),
+        ))
 
 @blueprint.route('/download/csv')
 def download_csv():

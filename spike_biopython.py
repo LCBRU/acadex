@@ -12,7 +12,8 @@ def iterdict(d, lvl=0):
             iterdict(v, lvl + 1)
 
 
-handle = Entrez.esearch(db="pubmed", retstart=5, retmax=10, term="(N Samani[Author])")
+# handle = Entrez.esearch(db="pubmed", retstart=5, retmax=10, term="(N Samani[Author])")
+handle = Entrez.esearch(db="pubmed", retstart=5, retmax=10, term="The Monomorphic Clear Cell Tumor: A Report Of Two Cases")
 records = Entrez.read(handle)
 print(records['Count'])
 print(records['RetMax'])
@@ -40,8 +41,11 @@ print(handle)
 
 records = Entrez.read(handle)
 for r in records['PubmedArticle']:
-    print(r['MedlineCitation']['PMID'])
-    # art = r['MedlineCitation']['Article']
+    art = r['MedlineCitation']['Article']
+    print(art)
+
+    # for au in art['AuthorList']:
+    #     print(' '.join([aff.get('Affiliation', None) for aff in au.get("AffiliationInfo", [])]))
 
     # print(art['ArticleDate'][0]['Year'])
 
