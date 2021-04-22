@@ -1,6 +1,5 @@
 requests
 -e git+https://github.com/LCBRU/lbrc_flask.git@main#egg=lbrc_flask
--e git+https://github.com/LCBRU/pymed.git@master#egg=pymed
 Flask
 sqlalchemy-migrate
 flask-api
