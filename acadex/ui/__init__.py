@@ -13,6 +13,7 @@ from openpyxl import Workbook
 from tempfile import NamedTemporaryFile
 from flask_weasyprint import HTML, render_pdf
 from Bio import Entrez
+from .forms import PublicationSearchForm
 
 
 blueprint = Blueprint("ui", __name__, template_folder="templates")
@@ -53,12 +54,16 @@ def index():
 
 @blueprint.route("/publications")
 def publications():
-    search_form = SearchForm(formdata=request.args)
+    search_form = PublicationSearchForm(formdata=request.args)
 
     q = Publication.query
 
     if search_form.search.data:
         q = q.filter(Publication.title.like("%{}%".format(search_form.search.data)))
+
+    if search_form.academic_id.data:
+        q = q.join(Publication.academics)
+        q = q.filter(Academic.id == search_form.academic_id.data)
 
     q = q.order_by(Publication.published_date.desc())
 
@@ -185,6 +190,7 @@ def _update_publication(pubmed_record, publication):
             initials=au.get("Initials", None),
             affiliation=' '.join([aff.get('Affiliation', None) for aff in au.get("AffiliationInfo", [])]),
         ))
+
 
 @blueprint.route('/download/csv')
 def download_csv():
