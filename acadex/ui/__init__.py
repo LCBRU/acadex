@@ -126,7 +126,7 @@ def _update_publications(academic):
     batch_size = 100
 
     while retstart < count:
-        handle = Entrez.esearch(db="pubmed", retstart=retstart, retmax=batch_size, term=f"({academic.pubmed_name}[Author])")
+        handle = Entrez.esearch(db="pubmed", retstart=retstart, retmax=batch_size, term=f"({academic.pubmed_name}[Author]) ")
         pubmed_records = Entrez.read(handle)
         handle.close()
 
@@ -168,9 +168,12 @@ def _update_publication(pubmed_record, publication):
                 )
     else:
         pub_date = art['Journal']['JournalIssue']['PubDate']
-        publication.published_date = parse_date_or_none(
-            f'{pub_date.get("Day", 1)} {pub_date["Month"]} {pub_date["Year"]}'
-        )
+        if 'MedlineDate' in pub_date.keys():
+            publication.published_date = parse_date_or_none(pub_date["MedlineDate"])
+        else:
+            publication.published_date = parse_date_or_none(
+                f'{pub_date.get("Day", 1)} {pub_date.get("Month", 1)} {pub_date["Year"]}'
+            )
 
     publication.title = art['ArticleTitle']
 
