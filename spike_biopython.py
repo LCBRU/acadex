@@ -1,7 +1,9 @@
 #/usr/bin/python
 
+from acadex.ui import publications
 from Bio import Entrez
 from pprint import pprint as pp
+from lbrc_flask.validators import parse_date_or_none
 
 Entrez.email = "richard.a.bramley@uhl-tr.nhs.uk"
 
@@ -13,16 +15,13 @@ def iterdict(d, lvl=0):
 
 
 # handle = Entrez.esearch(db="pubmed", retstart=5, retmax=10, term="(N Samani[Author])")
-handle = Entrez.esearch(db="pubmed", retstart=5, retmax=10, term="The Monomorphic Clear Cell Tumor: A Report Of Two Cases")
+handle = Entrez.esearch(db="pubmed", retstart=5, retmax=10, term="(Mandibular condyle fractures and the BMX bicycle)")
 records = Entrez.read(handle)
-print(records['Count'])
-print(records['RetMax'])
-print(records)
 handle.close()
 # print(records['IdList'])
 
-handle = Entrez.efetch(db="pubmed", id=records['IdList'], retmode='xml')
-
+# handle = Entrez.efetch(db="pubmed", id=records['IdList'], retmode='xml', retmax=1)
+handle = Entrez.efetch(db="pubmed", id=[6590077], retmode='xml', retmax=1)
 from dataclasses import dataclass
 
 @dataclass
@@ -42,7 +41,13 @@ print(handle)
 records = Entrez.read(handle)
 for r in records['PubmedArticle']:
     art = r['MedlineCitation']['Article']
-    print(art)
+    print(parse_date_or_none('01 Mar 2013'))
+
+    pub_date = art['Journal']['JournalIssue']['PubDate']
+
+    print(parse_date_or_none(f'01 {pub_date["Month"]} {pub_date["Year"]}'))
+
+    # print(art['journal'])
 
     # for au in art['AuthorList']:
     #     print(' '.join([aff.get('Affiliation', None) for aff in au.get("AffiliationInfo", [])]))

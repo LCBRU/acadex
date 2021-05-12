@@ -4,6 +4,7 @@ from flask import Blueprint, request, render_template, redirect, url_for, make_r
 from flask_security import login_required
 from lbrc_flask.database import db
 from lbrc_flask.forms import SearchForm
+from lbrc_flask.validators import parse_date_or_none
 from openpyxl.styles import Font
 from acadex.model import Academic, Publication, AbstractSection, Author
 from scholarly import scholarly
@@ -156,7 +157,6 @@ def _update_publication(pubmed_record, publication):
     art = pubmed_record['MedlineCitation']['Article']
     publication.journal = art['Journal']['Title']
 
-
     art['Journal']['Title']
 
     if len(art['ArticleDate']) > 0:
@@ -166,6 +166,11 @@ def _update_publication(pubmed_record, publication):
                     int(artdate['Month']),
                     int(artdate['Day']),
                 )
+    else:
+        pub_date = art['Journal']['JournalIssue']['PubDate']
+        publication.published_date = parse_date_or_none(
+            f'{pub_date.get("Day", 1)} {pub_date["Month"]} {pub_date["Year"]}'
+        )
 
     publication.title = art['ArticleTitle']
 
