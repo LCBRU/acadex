@@ -22,7 +22,13 @@ sudo apt-get install libsasl2-dev
 pip install -r requirements.txt
 ```
 
-3. Create the database using
+3. Create the Environment File
+
+Go to the `acadex` directory and copy the file `example.env` to `.env`.
+
+Change the etails in the file to appropriate values.
+
+4. Create the database using
 
 Staying in the `acadex` directory and type the command:
 
@@ -31,7 +37,7 @@ Staying in the `acadex` directory and type the command:
 ./manage.py upgrade
 ```
 
-4. Run the application
+5. Run the application
 
 Staying in the `acadex` directory and type the command:
 
@@ -39,7 +45,7 @@ Staying in the `acadex` directory and type the command:
 ./app.py
 ```
 
-5. Start Celery Worker
+6. Start Celery Worker
 
 This application uses Celery to run background tasks.
 To start Celery run the following command from the `acadex`
@@ -49,7 +55,7 @@ directory:
 celery -A celery_worker.celery worker
 ```
 
-5. Start Celery Beat
+7. Start Celery Beat
 
 This application uses Celery to run background tasks.
 To start Celery run the following command from the `acadex`
