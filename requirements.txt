@@ -9,3 +9,4 @@ openpyxl
 weasyprint
 Flask-WeasyPrint
 biopython
+celery

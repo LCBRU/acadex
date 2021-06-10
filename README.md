@@ -55,16 +55,6 @@ directory:
 celery -A celery_worker.celery worker
 ```
 
-7. Start Celery Beat
-
-This application uses Celery to run background tasks.
-To start Celery run the following command from the `acadex`
-directory:
-
-```
-celery -A celery_worker.celery beat
-```
-
 ## Development
 
 ### Testing
