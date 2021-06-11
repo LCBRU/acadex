@@ -12,6 +12,7 @@ class Academic(AuditMixin, CommonMixin, db.Model):
     cited_by = db.Column(db.Integer)
     h_index = db.Column(db.Integer)
     i10_index = db.Column(db.Integer)
+    is_updating = db.Column(db.Boolean)
 
     @property
     def pubmed_name(self):

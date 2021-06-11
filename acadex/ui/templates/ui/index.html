@@ -42,7 +42,13 @@
                                 <h1>{{a.name}}</h1>
                                 <h2>{{a.affiliation}}</h2>
                             </header>
-                            <small><a class="lock_screen" href="{{ url_for('ui.add_or_update', google_scholar_id=a.google_scholar_id) }}">last updated {{ a.last_update_date | datetime_humanize }}</a></small>
+                            <small>
+                                {% if a.is_updating %}
+                                    <span>Updating...</span>
+                                {% else %}
+                                    <a class="lock_screen" href="{{ url_for('ui.add_or_update', google_scholar_id=a.google_scholar_id) }}">last updated {{ a.last_update_date | datetime_humanize }}</a>
+                                {% endif %}
+                            </small>
                         </div>
                         <table class="table table-sm">
                             <tr>

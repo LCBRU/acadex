@@ -91,8 +91,6 @@ def add_search():
 
 @blueprint.route("/add_or_update/<string:google_scholar_id>/", methods=['GET', 'POST'])
 def add_or_update(google_scholar_id):
-    print('Walk')
-
     add_or_update_academic(google_scholar_id)
 
     return redirect(url_for('ui.index'))

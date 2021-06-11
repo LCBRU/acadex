@@ -36,12 +36,17 @@ def _add_or_update_academic(google_scholar_id, user_id):
         a.h_index=resp['hindex']
         a.i10_index=resp['i10index']
         a.last_update_date=datetime.utcnow()
+        a.is_updating = True
 
         db.session.add(a)
         db.session.commit()
 
         _update_publications(a)
 
+        a = Academic.query.filter(Academic.google_scholar_id == google_scholar_id).one()
+        a.is_updating = False
+        db.session.add(a)
+        db.session.commit()
 
     current_app.logger.info(f'Adding or Updating Academic Completed: {google_scholar_id}')
 
